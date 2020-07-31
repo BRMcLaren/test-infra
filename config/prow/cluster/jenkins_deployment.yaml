@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: jenkins-operator-prow
+  name: jenkins-operator
 spec:
   replicas: 1 # Do not scale up.
   template:
@@ -18,11 +18,18 @@ spec:
           containerPort: 8080
         args:
         - --dry-run=false
-        - --jenkins-token-file=/etc/github/oauth
+        - --config-path=/etc/config/config.yaml
+        - --deck-url=http://oe-prow-status.uksouth.cloudapp.azure.com
         - --github-token-path=/etc/github/oauth
+        - --jenkins-url=https://oe-prow-testing.uksouth.cloudapp.azure.com
+        - --jenkins-token-file=/etc/jenkins/jenkins-token
+        - --github-endpoint=http://ghproxy
+        - --github-endpoint=https://api.github.com
+        - --label-selector=master=jenkins-master
+        - --csrf-protect=true
         volumeMounts:
-        - mountPath: /etc/jenkins
-          name: jenkins
+        - name: jenkins
+          mountPath: /etc/jenkins
           readOnly: true
         - name: oauth
           mountPath: /etc/github
@@ -33,7 +40,6 @@ spec:
       volumes:
       - name: jenkins
         secret:
-          defaultMode: 420
           secretName: jenkins-token
       - name: oauth
         secret:

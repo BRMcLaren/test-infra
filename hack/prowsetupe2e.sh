@@ -1,5 +1,5 @@
 export LOCATION="uksouth"
-export RESOURCE_GROUP="ProwResources"
+export RESOURCE_GROUP="ProwResources2"
 export AKS_CLUSTER_NAME="oe-prow"
 export NODE_SIZE="Standard_DC8_v2"
 export MIN_NODE_COUNT="1"
@@ -57,7 +57,7 @@ openssl rand -hex 20 > $PWD/hmac
 
 kubectl create secret generic hmac-token --from-file=$PWD/hmac
 kubectl create secret generic oauth-token --from-file=$PWD/oauth
-kubectl create secret generic jenkins-token --from-file=$PWD/hmac
+kubectl create secret generic jenkins-token --from-file=$PWD/jenkins-token
 
 kubectl -n test-pods create secret generic gcs-credentials --from-file=service-account.json
 
@@ -94,20 +94,20 @@ kubectl apply -f test-infra/config/prow/cluster/jenkins_service.yaml
 kubectl apply -f test-infra/config/prow/cluster/jenkins_rbac.yaml
 
 # Deploy Jenkins
-kubectl apply -f https://raw.githubusercontent.com/jenkinsci/kubernetes-operator/master/deploy/crds/jenkins_v1alpha2_jenkins_crd.yaml
-helm repo add jenkins https://raw.githubusercontent.com/jenkinsci/kubernetes-operator/master/chart
-helm install jenkins-operator jenkins/jenkins-operator
+#kubectl apply -f https://raw.githubusercontent.com/jenkinsci/kubernetes-operator/master/deploy/crds/jenkins_v1alpha2_jenkins_crd.yaml
+#helm repo add jenkins https://raw.githubusercontent.com/jenkinsci/kubernetes-operator/master/chart
+#helm install jenkins-operator jenkins/jenkins-operator
 
 sleep 4m
 
 kubectl get service -l app=nginx-ingress --namespace ingress-basic
 
 #1. Watch Jenkins instance being created:
-kubectl --namespace default get pods
+#kubectl --namespace default get pods
 
 #2. Get Jenkins credentials:
-kubectl --namespace default get secret jenkins-operator-credentials-jenkins -o 'jsonpath={.data.user}' | base64 -d
-kubectl --namespace default get secret jenkins-operator-credentials-jenkins -o 'jsonpath={.data.password}' | base64 -d
+#kubectl --namespace default get secret jenkins-operator-credentials-jenkins -o 'jsonpath={.data.user}' | base64 -d
+#kubectl --namespace default get secret jenkins-operator-credentials-jenkins -o 'jsonpath={.data.password}' | base64 -d
 
 #3. Connect to Jenkins (actual Kubernetes cluster):
 #kubectl --namespace default port-forward jenkins-jenkins 8080:8080

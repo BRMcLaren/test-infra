@@ -45,3 +45,49 @@ sinker:
   max_prowjob_age: 48h
   max_pod_age: 48h
   terminated_pod_ttl: 30m
+jenkins_operators:
+- label_selector: master=jenkins-master
+  max_concurrency: 150
+  max_goroutines: 20
+  job_url_template: 'https://oe-prow-testing.uksouth.cloudapp.azure.com/job/HelloProw/11/consoleText'
+  report_templates:
+    '*': '[Full PR test history](https://pr-history/{{if ne .Spec.Refs.Repo "origin"}}{{.Spec.Refs.Org}}_{{.Spec.Refs.Repo}}/{{end}}{{with index .Spec.Refs.Pulls 0}}{{.Number}}{{end}}).'
+- label_selector: master2=jenkins-master
+  max_concurrency: 150
+  max_goroutines: 20
+  job_url_template: 'https://oe-prow-testing.uksouth.cloudapp.azure.com/job/HelloProw/11/consoleText'
+  report_templates:
+    '*': '[Full PR test history](https://pr-history/{{if ne .Spec.Refs.Repo "origin"}}{{.Spec.Refs.Org}}_{{.Spec.Refs.Repo}}/{{end}}{{with index .Spec.Refs.Pulls 0}}{{.Number}}{{end}}).'
+deck:
+  external_agent_logs:
+  - agent: jenkins
+    url_template: 'http://jenkins-operator/job/{{.Spec.Job}}/{{.Status.BuildID}}/consoleText'
+presubmits:
+  BRMcLaren/test-infra:
+  - name: HelloProw
+    agent: jenkins
+    labels:
+      master: jenkins-master
+    always_run: true
+    context: HelloProw
+    rerun_command: "/test unit"
+    trigger: "((?m)^/test( all| unit),?(\\s+|$))"
+  - name: pull-request-unit
+    agent: jenkins
+    labels:
+      master: jenkins-master
+    always_run: true
+    context: pull-request-unit
+    rerun_command: "/test unit"
+    trigger: "((?m)^/test( all| unit),?(\\s+|$))"
+periodics:
+  - name: HelloProw
+    agent: jenkins
+    labels:
+      master: jenkins-master
+    interval: 5m
+  - name: pull-request-unit
+    agent: jenkins
+    labels:
+      master: jenkins-master
+    interval: 5m

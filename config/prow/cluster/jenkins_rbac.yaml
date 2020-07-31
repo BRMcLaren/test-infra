@@ -2,12 +2,13 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: jenkins-operator-prow
+  namespace: default
+  name: jenkins-operator
 ---
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: jenkins-operator-prow
+  name: jenkins-operator
 rules:
   - apiGroups:
       - ""
@@ -114,11 +115,32 @@ rules:
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: jenkins-operator-prow
+  name: jenkins-operator
 subjects:
 - kind: ServiceAccount
-  name: jenkins-operator-prow
+  name: jenkins-operator
 roleRef:
   kind: Role
-  name: jenkins-operator-prow
+  name: jenkins-operator
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: prow
+rules:
+- apiGroups: ["prow.k8s.io"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: prow
+subjects:
+- kind: ServiceAccount
+  name: default
+roleRef:
+  name: prow
+  kind: ClusterRole
   apiGroup: rbac.authorization.k8s.io
