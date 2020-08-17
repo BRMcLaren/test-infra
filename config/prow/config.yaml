@@ -16,11 +16,10 @@ tide:
         - do-not-merge/work-in-progress
         - needs-rebases
 plank:
-  job_url_prefix_config:
-    '*': http://oe-prow-status.uksouth.cloudapp.azure.com/view/gcs
-  job_url_template: 'http://oe-prow-status.uksouth.cloudapp.azure.com/view/gcs/oe-prow-artifacts/pr-logs/pull/{{.Spec.Refs.Repo}}/{{with index .Spec.Refs.Pulls 0}}{{.Number}}{{end}}/{{.Spec.Job}}/{{.Status.BuildID}}'
+  job_url_template: 'https://storage.googleapis.com/oe-prow-artifacts/{{if eq .Spec.Type "presubmit"}}pr-logs/pull{{else if eq .Spec.Type "batch"}}pr-logs/pull{{else}}logs{{end}}{{if eq .Spec.Type "presubmit"}}/{{.Spec.Refs.Org}}_{{.Spec.Refs.Repo}}/{{with index .Spec.Refs.Pulls 0}}{{.Number}}{{end}}{{else if eq .Spec.Type "batch"}}/batch{{end}}/{{.Spec.Job}}/{{.Status.BuildID}}/build-log.txt'
+  #TODO Fix Prow Config Report Template
   report_templates:
-    '*': '[Full PR test history](http://oe-prow-status.uksouth.cloudapp.azure.com/pr-history?org={{.Spec.Refs.Org}}&repo={{.Spec.Refs.Repo}}&pr={{with index .Spec.Refs.Pulls 0}}{{.Number}}{{end}}). [Your PR dashboard](http://oe-prow-status.uksouth.cloudapp.azure.com/pr?query=is%3Apr%20state%3Aopen%20author%3{{with index .Spec.Refs.Pulls 0}}{{.Author}}{{end}}). Please help us cut down on flakes by openening an issue when you hit one in your PR.'
+    '*': '[Full PR test history](https://prow.k8s.io/pr-history?org={{.Spec.Refs.Org}}&repo={{.Spec.Refs.Repo}}&pr={{with index .Spec.Refs.Pulls 0}}{{.Number}}{{end}}). [Your PR dashboard](https://prow.k8s.io/pr?query=is%3Apr%20state%3Aopen%20author%3{{with index .Spec.Refs.Pulls 0}}{{.Author}}{{end}}). Please help us cut down on flakes by [linking to](https://git.k8s.io/community/contributors/devel/sig-testing/flaky-tests.md#filing-issues-for-flaky-tests) an [open issue](https://github.com/{{.Spec.Refs.Org}}/{{.Spec.Refs.Repo}}/issues?q=is:issue+is:open) when you hit one in your PR.'
   pod_pending_timeout: 15m
   pod_unscheduled_timeout: 15m
   default_decoration_configs:
@@ -61,17 +60,10 @@ jenkins_operators:
 deck:
   external_agent_logs:
   - agent: jenkins
-    url_template: 'http://jenkins-operator/job/{{.Spec.Job}}/{{.Status.BuildID}}/consoleText'
+    url_template: 'https://oe-prow-testing.uksouth.cloudapp.azure.com/job/pull-request-unit/'
+
 presubmits:
   BRMcLaren/test-infra:
-  - name: HelloProw
-    agent: jenkins
-    labels:
-      master: jenkins-master
-    always_run: true
-    context: HelloProw
-    rerun_command: "/test unit"
-    trigger: "((?m)^/test( all| unit),?(\\s+|$))"
   - name: pull-request-unit
     agent: jenkins
     labels:
@@ -80,14 +72,4 @@ presubmits:
     context: pull-request-unit
     rerun_command: "/test unit"
     trigger: "((?m)^/test( all| unit),?(\\s+|$))"
-periodics:
-  - name: HelloProw
-    agent: jenkins
-    labels:
-      master: jenkins-master
-    interval: 5m
-  - name: pull-request-unit
-    agent: jenkins
-    labels:
-      master: jenkins-master
-    interval: 5m
+    
