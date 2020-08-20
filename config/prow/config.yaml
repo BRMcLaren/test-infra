@@ -19,13 +19,13 @@ plank:
   job_url_template: 'https://storage.googleapis.com/oe-prow-artifacts/{{if eq .Spec.Type "presubmit"}}pr-logs/pull{{else if eq .Spec.Type "batch"}}pr-logs/pull{{else}}logs{{end}}{{if eq .Spec.Type "presubmit"}}/{{.Spec.Refs.Org}}_{{.Spec.Refs.Repo}}/{{with index .Spec.Refs.Pulls 0}}{{.Number}}{{end}}{{else if eq .Spec.Type "batch"}}/batch{{end}}/{{.Spec.Job}}/{{.Status.BuildID}}/build-log.txt'
   #TODO Fix Prow Config Report Template
   report_templates:
-    '*': '[Full PR test history](https://prow.k8s.io/pr-history?org={{.Spec.Refs.Org}}&repo={{.Spec.Refs.Repo}}&pr={{with index .Spec.Refs.Pulls 0}}{{.Number}}{{end}}). [Your PR dashboard](https://prow.k8s.io/pr?query=is%3Apr%20state%3Aopen%20author%3{{with index .Spec.Refs.Pulls 0}}{{.Author}}{{end}}). Please help us cut down on flakes by [linking to](https://git.k8s.io/community/contributors/devel/sig-testing/flaky-tests.md#filing-issues-for-flaky-tests) an [open issue](https://github.com/{{.Spec.Refs.Org}}/{{.Spec.Refs.Repo}}/issues?q=is:issue+is:open) when you hit one in your PR.'
-  pod_pending_timeout: 15m
-  pod_unscheduled_timeout: 15m
+    '*': '[Full PR test history](http://oe-prow-status.uksouth.cloudapp.azure.com/pr-history?org={{.Spec.Refs.Org}}&repo={{.Spec.Refs.Repo}}&pr={{with index .Spec.Refs.Pulls 0}}{{.Number}}{{end}}). [Your PR dashboard](https://prow.k8s.io/pr?query=is%3Apr%20state%3Aopen%20author%3{{with index .Spec.Refs.Pulls 0}}{{.Author}}{{end}}). Please help us cut down on flakes by [linking to](https://git.k8s.io/community/contributors/devel/sig-testing/flaky-tests.md#filing-issues-for-flaky-tests) an [open issue](https://github.com/{{.Spec.Refs.Org}}/{{.Spec.Refs.Repo}}/issues?q=is:issue+is:open) when you hit one in your PR.'
+  pod_pending_timeout: 1m
+  pod_unscheduled_timeout: 1m
   default_decoration_configs:
     '*':
       timeout: 2h
-      grace_period: 15m
+      grace_period: 1m
       utility_images:
         clonerefs: "gcr.io/k8s-prow/clonerefs:v20200710-7fa016752a"
         initupload: "gcr.io/k8s-prow/initupload:v20200710-7fa016752a"
@@ -35,6 +35,10 @@ plank:
         bucket: oe-prow-artifacts
         path_strategy: explicit
       gcs_credentials_secret: gcs-credentials
+deck:
+  external_agent_logs:
+  - agent: jenkins
+    url_template: 'http://jenkins-operator/job/{{.Spec.Job}}/{{.Status.BuildID}}/consoleText'
 github_reporter:
   job_types_to_report:
     - presubmit
@@ -43,33 +47,102 @@ sinker:
   resync_period: 1m
   max_prowjob_age: 48h
   max_pod_age: 48h
-  terminated_pod_ttl: 30m
+  terminated_pod_ttl: 2h
 jenkins_operators:
-- label_selector: master=jenkins-master
-  max_concurrency: 150
+- max_concurrency: 150
   max_goroutines: 20
-  job_url_template: 'https://oe-prow-testing.uksouth.cloudapp.azure.com/job/HelloProw/11/consoleText'
-  report_templates:
-    '*': '[Full PR test history](https://pr-history/{{if ne .Spec.Refs.Repo "origin"}}{{.Spec.Refs.Org}}_{{.Spec.Refs.Repo}}/{{end}}{{with index .Spec.Refs.Pulls 0}}{{.Number}}{{end}}).'
-- label_selector: master2=jenkins-master
-  max_concurrency: 150
-  max_goroutines: 20
-  job_url_template: 'https://oe-prow-testing.uksouth.cloudapp.azure.com/job/HelloProw/11/consoleText'
-  report_templates:
-    '*': '[Full PR test history](https://pr-history/{{if ne .Spec.Refs.Repo "origin"}}{{.Spec.Refs.Org}}_{{.Spec.Refs.Repo}}/{{end}}{{with index .Spec.Refs.Pulls 0}}{{.Number}}{{end}}).'
+  job_url_template: 'https://storage-for-logs/{{if eq .Spec.Type "presubmit"}}pr-logs/pull{{else if eq .Spec.Type "batch"}}pr-logs/pull{{else}}logs{{end}}{{if ne .Spec.Refs.Repo "origin"}}/{{.Spec.Refs.Org}}_{{.Spec.Refs.Repo}}{{end}}{{if eq .Spec.Type "presubmit"}}/{{with index .Spec.Refs.Pulls 0}}{{.Number}}{{end}}{{else if eq .Spec.Type "batch"}}/batch{{end}}/{{.Spec.Job}}/{{.Status.BuildID}}/'
+  report_template: '[Full PR test history](https://pr-history/{{if ne .Spec.Refs.Repo "origin"}}{{.Spec.Refs.Org}}_{{.Spec.Refs.Repo}}/{{end}}{{with index .Spec.Refs.Pulls 0}}{{.Number}}{{end}}).'
 deck:
   external_agent_logs:
   - agent: jenkins
-    url_template: 'https://oe-prow-testing.uksouth.cloudapp.azure.com/job/pull-request-unit/'
+    url_template: 'http://jenkins-operator/job/{{.Spec.Job}}/{{.Status.BuildID}}/consoleText'
 
 presubmits:
   BRMcLaren/test-infra:
   - name: pull-request-unit
     agent: jenkins
-    labels:
-      master: jenkins-master
     always_run: true
     context: pull-request-unit
     rerun_command: "/test unit"
     trigger: "((?m)^/test( all| unit),?(\\s+|$))"
-    
+periodics:
+  - name: pull-request-unit
+    agent: jenkins
+    interval: 1h
+  - name: ci-openenclave-openenclave-cmake-1804
+    extra_refs:
+    - org: openenclave
+      repo: openenclave
+      base_ref: master
+    decorate: true
+    interval: 1h
+    spec:
+      containers:
+        - image: openenclave/ubuntu1804:latest
+          command:
+            - sh
+            - "-c"
+            - "/hack/cmake-build.sh"
+          volumeMounts:
+          - mountPath: /dev/sgx
+            name: dev-sgx
+          securityContext:
+            privileged: true
+      volumes:
+      - name: dev-sgx
+        hostPath:
+          path: /dev/sgx
+      restartPolicy: Never
+  - name: ci-openenclave-openenclave-cmake-1604
+    extra_refs:
+    - org: openenclave
+      repo: openenclave
+      base_ref: master
+    decorate: true
+    interval: 5m
+    spec:
+      containers:
+        - image: openenclave/ubuntu1604:latest
+          command:
+            - sh
+            - "-c"
+            - "/hack/cmake-build.sh"
+          volumeMounts:
+          - mountPath: /dev/sgx
+            name: dev-sgx
+          securityContext:
+            privileged: true
+      volumes:
+      - name: dev-sgx
+        hostPath:
+          path: /dev/sgx
+      restartPolicy: Never
+  - name: ci-openenclave-oeedger8r-cmake-1804
+    extra_refs:
+    - org: openenclave
+      repo: oeedger8r-cpp
+      base_ref: master
+    decorate: true
+    interval: 3h
+    spec:
+      containers:
+        - image: openenclave/ubuntu1804:latest
+          command:
+            - sh
+            - "-c"
+            - "/hack/cmake-build.sh"
+  - name: ci-openenclave-oeedger8r-cmake-1604
+    extra_refs:
+    - org: openenclave
+      repo: oeedger8r-cpp
+      base_ref: master
+    decorate: true
+    interval: 3h
+    spec:
+      containers:
+        - image: openenclave/ubuntu1604:latest
+          command:
+            - sh
+            - "-c"
+            - "/hack/cmake-build.sh"

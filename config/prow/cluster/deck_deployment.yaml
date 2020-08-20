@@ -33,6 +33,7 @@ spec:
         - --hook-url=http://hook:8888/plugin-help
         - --github-token-path=/etc/github/oauth
         - --plugin-config=/etc/plugins/plugins.yaml
+        - --spyglass=true
         ports:
           - name: http
             containerPort: 8080

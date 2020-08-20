@@ -25,7 +25,6 @@ spec:
         - --jenkins-token-file=/etc/jenkins/jenkins-token
         - --github-endpoint=http://ghproxy
         - --github-endpoint=https://api.github.com
-        - --label-selector=master=jenkins-master
         - --csrf-protect=true
         volumeMounts:
         - name: jenkins

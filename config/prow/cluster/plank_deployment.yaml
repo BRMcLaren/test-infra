@@ -26,6 +26,7 @@ spec:
         - --dry-run=false
         - --config-path=/etc/config/config.yaml
         - --skip-report=false
+        - --tot-url=http://tot
         volumeMounts:
         - name: oauth
           mountPath: /etc/github
