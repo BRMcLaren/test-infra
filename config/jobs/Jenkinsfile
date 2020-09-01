@@ -56,7 +56,7 @@ pipeline {
                         steps {
                             checkout scm
                             sh  """
-                            git fetch origin pull/63/head:PR
+                            git fetch origin pull/1/head:PR
                             git checkout PR
                             git rebase master
                             """
