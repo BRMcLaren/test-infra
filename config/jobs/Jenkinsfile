@@ -58,7 +58,7 @@ pipeline {
                             sh  """
                             git fetch origin pull/1/head:PR
                             git checkout PR
-                            git rebase master
+                            git rebase origin/master
                             """
                         }
                     }
