@@ -18,11 +18,12 @@ if [[ $1 == "-h" || $1 == "--help" ]]; then
    echo " ./hack/cmake-build.sh"
    echo "        -b Debug|RelWithDebInfo|Release or -b=Debug|RelWithDebInfo|Release"
    echo "        -h or --help to Display usage and exit"
-   echo "        --compiler=[clang-7,gcc] to build with a specified compiler"
+   echo "        --compiler=[clang-7,clang-8,gcc] to build with a specified compiler"
    echo "        --build_package to Build a .deb package after testing"
    echo "        --install_package to install a .deb package after testing"
    echo "        --test_package to test the installed package"
    echo "        --simulation_mode to run in simulation mode"
+   echo "        --hardware_mode to run in hardware mode"
    echo "        --enable_full_libcxx_tests to Enable libcxx tests"
    echo "        --enable_lvi_mitigation to Enable lvi mitigation"
    echo "        --enable_full_libc_tests to Enable libc tests"
@@ -40,7 +41,7 @@ OE_INSTALL_DIR="/opt/openenclave"
 # Flag for enabling full libcxx tests.
 ENABLE_FULL_LIBCXX_TESTS=0
 # Valid COMPILER_VALUE inputs are clang-7|gcc
-COMPILER_VALUE="clang-7"
+COMPILER_VALUE="clang-8"
 # Install a package. Default is disabled
 INSTALL_PACKAGE=0
 # Test a package. Default is disabled
@@ -80,6 +81,10 @@ while [[ $# -gt 0 ]]; do
         # This is a flag type option. Will catch --simulation_mode
         --simulation_mode)
         SIMULATION_MODE=1
+        ;;
+        # This is a flag type option. Will catch --hardware_mode
+        --hardware_mode)
+        SIMULATION_MODE=0
         ;;
         # This is a flag type option. Will catch --build_package
         --build_package)
@@ -143,6 +148,9 @@ echo "CMake command is '${CMAKE}'"
 if [[ ${COMPILER_VALUE} == "gcc" ]]; then
     export CC="gcc"
     export CXX="g++"
+elif [[ ${COMPILER_VALUE} == "clang-8" ]]; then
+    export CC="clang-8"
+    export CXX="clang++-8"
 elif [[ ${COMPILER_VALUE} == "clang-7" ]]; then
     export CC="clang-7"
     export CXX="clang++-7"
@@ -172,7 +180,7 @@ else
 fi
 
 # Finally run the tests in simulation or on Hardware
-if [[ ${SIMULATION_MODE} -ne 1 ]]; then
+if [[ ${SIMULATION_MODE} -eq 1 ]]; then
     SIMULATION_MODE_TEXT="simulation"
     export OE_SIMULATION=1
 fi

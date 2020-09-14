@@ -1,4 +1,4 @@
-  - name: pr-openenclave-oeedger8r-cmake-${version}-${build_type}-${compiler}
+  - name: pr-${org}-${repo}-${operating_system}-${build_type_short}-${compiler_short}
     branches:
     - master
     always_run: true
@@ -7,7 +7,7 @@
     max_concurrency: 10
     spec:
       containers:
-      - image: openenclave/ubuntu${version}:${docker_version}
+      - image: openenclave/${operating_system}:latest
         command:
         - /bin/bash
         args:

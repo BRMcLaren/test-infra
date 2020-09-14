@@ -29,6 +29,8 @@ apt_packages:
   - "libcurl4-openssl-dev"
   - "libx11-dev"
   - "libncurses5-dev"
+  - "clang-8"
+  - "clang-format-8"
 
 apt_arm_packages:
   - "gcc-arm-linux-gnueabi"
