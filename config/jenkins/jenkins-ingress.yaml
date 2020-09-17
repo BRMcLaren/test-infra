@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingress-nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ingress-nginx
+  template:
+   metadata:
+    labels:
+     app: ingress-nginx
+   spec:
+     containers:
+     - image: gcr.io/google_containers/nginx-ingress-controller:0.8.3
+       name: ingress-nginx
+       imagePullPolicy: Always
+       ports:
+       - name: http
+         containerPort: 80
+         protocol: TCP
+       - name: https
+         containerPort: 443
+         protocol: TCP
+       env:
+       - name: POD_NAME
+         valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+       - name: POD_NAMESPACE
+         valueFrom:
+           fieldRef:
+            fieldPath: metadata.namespace
+       args:
+        - /nginx-ingress-controller
+        - --default-backend-service=$(POD_NAMESPACE)/nginx-default-backend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingress-nginx
+spec:
+  type: LoadBalancer
+  selector:
+    app: ingress-nginx
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+  - name: https
+    port: 443
+    targetPort: https
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: jenkins-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+    nginx.ingress.kubernetes.io/cors-allow-headers: Authorization, origin, accept
+    nginx.ingress.kubernetes.io/cors-allow-methods: GET, OPTIONS
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        backend:
+          serviceName: jenkins-master-svc
+          servicePort: 8080
