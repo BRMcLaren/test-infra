@@ -37,4 +37,11 @@ ehthumbs.db
 Thumbs.db
 
 # Ignore notes
-Notes.txt
+hmac
+oauth
+notes
+cookie.txt
+secret
+service-account.json
+aks-ingress-tls.key
+aks-ingress-tls.crt
